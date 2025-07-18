@@ -1,5 +1,7 @@
 package com.example.netflixBackend.security;
 
+import io.jsonwebtoken.ExpiredJwtException;
+import io.jsonwebtoken.JwtException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -29,16 +31,23 @@ public class JwtFilter extends OncePerRequestFilter {
         String username = null;
         String jwt = null;
 
-        if (authHeader != null && authHeader.startsWith("Bearer ")) {
-            jwt = authHeader.substring(7);
-            username = jwtUtil.getUsernameFromToken(jwt);
-        }
-
-        if (username != null && SecurityContextHolder.getContext().getAuthentication() == null) {
-            UserDetails userDetails = userDetailsService.loadUserByUsername(username);
-            if (jwtUtil.validateToken(jwt)) {
-                // Authentication nesnesi oluşturulup SecurityContext'e set edilebilir
+        try {
+            if (authHeader != null && authHeader.startsWith("Bearer ")) {
+                jwt = authHeader.substring(7);
+                username = jwtUtil.getUsernameFromToken(jwt);
+                if (username != null && SecurityContextHolder.getContext().getAuthentication() == null) {
+                    UserDetails userDetails = userDetailsService.loadUserByUsername(username);
+                    if (jwtUtil.validateToken(jwt)) {
+                        // Authentication nesnesi oluşturulup SecurityContext'e set edilebilir
+                    }
+                }
+            } else if (authHeader == null) {
+                request.setAttribute("JWT_ERROR", "JWT token sağlanmadı");
             }
+        } catch (ExpiredJwtException e) {
+            request.setAttribute("JWT_ERROR", "JWT token süresi dolmuş");
+        } catch (JwtException | IllegalArgumentException e) {
+            request.setAttribute("JWT_ERROR", "Geçersiz JWT token");
         }
         filterChain.doFilter(request, response);
     }
