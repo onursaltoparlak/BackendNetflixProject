@@ -19,3 +19,9 @@ spring:
   jackson:
     serialization:
       fail-on-empty-beans: false 
+
+springdoc:
+  swagger-ui:
+    path: /swagger-ui.html
+  api-docs:
+    path: /v3/api-docs 
